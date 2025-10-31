@@ -3,9 +3,9 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js').catch(console.error);
 }
 
-// ====== STATE ======
+/* ================= STATE ================= */
 const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-const STORAGE_KEY = 'hebo_state_v61';
+const STORAGE_KEY = 'hebo_state_v61_tabs';
 
 let state = {
   apiKey: '',
@@ -19,7 +19,7 @@ let state = {
     {name:'Thomas', G:100, P:200, V:150},
     {name:'Anaïs',  G:50,  P:100, V:250}
   ],
-  // planning[day] = { lunch: {enabled:true, who:['Thomas','Anaïs']}, dinner:{...} }
+  // planning[day][meal].enabled + planning[day][meal].who[name]=true/false
   planning: {}
 };
 
@@ -30,9 +30,29 @@ function load(){
   try{ state = {...state, ...JSON.parse(raw)}; }catch(_){}
 }
 
-// ====== UI HOOKS ======
+/* =============== TABS =============== */
+const tabs = Array.from(document.querySelectorAll('.tab'));
+const panels = {
+  planning: document.getElementById('tab-planning'),
+  profils: document.getElementById('tab-profils'),
+  materiel: document.getElementById('tab-materiel'),
+  params: document.getElementById('tab-params')
+};
+
+tabs.forEach(t=>{
+  t.addEventListener('click', ()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const target = t.dataset.tab;
+    Object.entries(panels).forEach(([k,el])=>{
+      if(k===target){ el.hidden=false; el.classList.add('active'); }
+      else { el.hidden=true; el.classList.remove('active'); }
+    });
+  });
+});
+
+/* =============== UI HOOKS =============== */
 const el = (sel)=>document.querySelector(sel);
-const els = (sel)=>Array.from(document.querySelectorAll(sel));
 const apiKeyEl = el('#apiKey');
 const modelEl = el('#model');
 const maxTokensEl = el('#maxTokens');
@@ -40,32 +60,34 @@ const matosEl = el('#matos');
 const enviesEl = el('#envies');
 const autresEl = el('#autres');
 const placardEl = el('#placard');
+
 const profilesListEl = el('#profilesList');
 const addProfileBtn = el('#addProfileBtn');
 const pNameEl = el('#pName'); const pGEl = el('#pG'); const pPEl = el('#pP'); const pVEl = el('#pV');
+
 const planningTable = el('#planningTable');
 const generateBtn = el('#generateBtn');
 const statusEl = el('#status');
 const resultsEl = el('#results');
 const exportBtn = el('#exportBtn');
 
-// Install prompt
+// Install prompt (PWA)
 let deferredPrompt = null;
 const installBtn = el('#installBtn');
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display='inline-block'; });
-installBtn.addEventListener('click', async () => {
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn?.classList?.remove('hidden'); });
+installBtn?.addEventListener('click', async () => {
   if(!deferredPrompt) return;
-  deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display='none';
+  deferredPrompt.prompt(); deferredPrompt = null;
 });
 
-// ====== INIT ======
+/* =============== INIT =============== */
 load();
+initPlanningState();   // must be before rendering
 mountConfig();
 renderProfiles();
-initPlanningState();
 renderPlanning();
 
-// ====== CONFIG BINDINGS ======
+/* =============== CONFIG BINDINGS =============== */
 function mountConfig(){
   apiKeyEl.value = state.apiKey || '';
   modelEl.value = state.model || 'gpt-4.1-mini';
@@ -92,7 +114,7 @@ function mountConfig(){
   });
 }
 
-// ====== PROFILES ======
+/* =============== PROFILES =============== */
 function renderProfiles(){
   profilesListEl.innerHTML = '';
   state.profiles.forEach(p=>{
@@ -101,7 +123,7 @@ function renderProfiles(){
     div.innerHTML = `
       <div>
         <div><b>${p.name}</b></div>
-        <div class="mini">G:${p.G}g / P:${p.P}g / V:${p.V}g par portion</div>
+        <div class="mini">G:${p.G}g • P:${p.P}g • V:${p.V}g par portion</div>
       </div>
       <div class="actions">
         <button class="btn ghost" data-edit="${p.name}">Éditer</button>
@@ -121,6 +143,10 @@ function renderProfiles(){
     b.onclick = ()=>{
       const n = b.dataset.del;
       state.profiles = state.profiles.filter(x=>x.name!==n);
+      // purge planning selections for removed profile
+      DAYS.forEach(d=>['lunch','dinner'].forEach(m=>{
+        if(state.planning[d][m].who) delete state.planning[d][m].who[n];
+      }));
       save(); renderProfiles(); renderPlanning();
     };
   });
@@ -137,90 +163,95 @@ addProfileBtn.addEventListener('click', (e)=>{
   save(); renderProfiles(); renderPlanning();
 });
 
-// ====== PLANNING (table L->D, Midi/Dîner, qui mange) ======
+/* =============== PLANNING =============== */
 function initPlanningState(){
   if (Object.keys(state.planning||{}).length) return;
   DAYS.forEach(d=>{
     state.planning[d] = {
-      lunch: { enabled:false, who:[] },
-      dinner:{ enabled:false, who:[] }
+      lunch:  { enabled:false, who:{} },
+      dinner: { enabled:false, who:{} }
     };
   });
   save();
 }
 
 function renderPlanning(){
-  const profOptions = state.profiles.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
-  const mealRow = (day, label) => {
-    const slot = state.planning[day][label];
-    const who = (slot.who||[]);
-    const pill = (arr)=> arr.map(w=>`<span class="badge">${w}</span>`).join(' ');
-    return `
-      <tr>
-        <td class="day">${label==='lunch'?'Midi':'Dîner'}</td>
-        <td><input type="checkbox" data-day="${day}" data-meal="${label}" ${slot.enabled?'checked':''}></td>
-        <td>
-          <select data-day="${day}" data-meal="${label}" data-who="1">${who[0]??''?`<option>${who[0]}</option>`:''}${profOptions}</select>
-        </td>
-        <td>
-          <select data-day="${day}" data-meal="${label}" data-who="2">${who[1]??''?`<option>${who[1]}</option>`:''}${profOptions}</select>
-        </td>
-        <td class="who">${pill(who)}</td>
-      </tr>`;
-  };
-  let html = `
-    <thead>
-      <tr><th>Jour</th><th>Actif</th><th>Qui #1</th><th>Qui #2</th><th>Résumé</th></tr>
-    </thead>
-    <tbody>`;
-  DAYS.forEach(day=>{
-    html += `<tr><th colspan="5" class="day">${day}</th></tr>`;
-    html += mealRow(day,'lunch');
-    html += mealRow(day,'dinner');
-  });
-  html += `</tbody>`;
-  planningTable.innerHTML = html;
+  // ensure who objects contain only known profiles
+  DAYS.forEach(d=>['lunch','dinner'].forEach(m=>{
+    const who = state.planning[d][m].who || {};
+    const allowed = new Set(state.profiles.map(p=>p.name));
+    Object.keys(who).forEach(k=>{ if(!allowed.has(k)) delete who[k]; });
+    state.planning[d][m].who = who;
+  }));
 
-  // Bind
+  const profs = state.profiles.map(p=>p.name);
+  let thead = `
+    <thead>
+      <tr>
+        <th class="day">Jour</th>
+        <th class="meal">Repas</th>
+        <th>Actif</th>
+        ${profs.map(n=>`<th>${n}</th>`).join('')}
+        <th>Résumé</th>
+      </tr>
+    </thead>`;
+  let tbody = `<tbody>`;
+  DAYS.forEach(day=>{
+    // day header row
+    tbody += `<tr><th class="day" colspan="${4+profs.length}">${day}</th></tr>`;
+    ['lunch','dinner'].forEach(meal=>{
+      const slot = state.planning[day][meal];
+      const label = meal==='lunch'?'Midi':'Dîner';
+      const summary = Object.entries(slot.who||{}).filter(([,v])=>!!v).map(([n])=>n).join(' · ') || '<span class="muted">—</span>';
+      tbody += `
+        <tr>
+          <td class="meal">${label}</td>
+          <td><input type="checkbox" data-day="${day}" data-meal="${meal}" data-kind="enabled" ${slot.enabled?'checked':''}></td>
+          ${profs.map(n=>{
+            const checked = slot.who?.[n] ? 'checked' : '';
+            return `<td><input type="checkbox" data-day="${day}" data-meal="${meal}" data-kind="who" data-name="${n}" ${checked}></td>`;
+          }).join('')}
+          <td>${summary}</td>
+        </tr>`;
+    });
+  });
+  tbody += `</tbody>`;
+
+  planningTable.innerHTML = thead + tbody;
+
+  // Bind checkboxes
   planningTable.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
     cb.onchange = ()=>{
-      const d = cb.dataset.day, m = cb.dataset.meal;
-      state.planning[d][m].enabled = cb.checked; save(); renderPlanning();
-    };
-  });
-  planningTable.querySelectorAll('select[data-who]').forEach(sel=>{
-    sel.onchange = ()=>{
-      const d = sel.dataset.day, m = sel.dataset.meal;
-      const idx = Number(sel.dataset.who)-1;
-      const val = sel.value;
-      const arr = state.planning[d][m].who || [];
-      arr[idx] = val;
-      state.planning[d][m].who = Array.from(new Set(arr.filter(Boolean)));
+      const d = cb.dataset.day, m = cb.dataset.meal, kind = cb.dataset.kind;
+      if(kind==='enabled'){
+        state.planning[d][m].enabled = cb.checked;
+      } else if(kind==='who'){
+        if(!state.planning[d][m].who) state.planning[d][m].who = {};
+        state.planning[d][m].who[cb.dataset.name] = cb.checked;
+        // auto-enable if someone is selected
+        if (cb.checked) state.planning[d][m].enabled = true;
+      }
       save(); renderPlanning();
     };
   });
 }
 
-// ====== PROMPT BUILDER (mêmes règles “VENÈRE ++”) ======
+/* =============== PROMPT “VENÈRE ++” BUILDER =============== */
 function buildPromptPayload(){
-  // Planning → TSV équivalent
+  // Build TSV from planning
   const lines = [];
   DAYS.forEach(day=>{
     ['lunch','dinner'].forEach(meal=>{
       const slot = state.planning[day][meal];
       if(!slot.enabled) return;
-      lines.push([day, (meal==='lunch'?'Midi':'Dîner'), (slot.who||[]).join(', ')].join('\t'));
+      const who = Object.entries(slot.who||{}).filter(([,v])=>!!v).map(([n])=>n);
+      if(!who.length) return; // ignore empty
+      lines.push([day, (meal==='lunch'?'Midi':'Dîner'), who.join(', ')].join('\t'));
     });
   });
   const inputTSV = lines.join('\n') || '(aucun)';
 
-  // Cibles par “chunk” = 1 recette par ligne (comme avant: distribution par 3 portions max par recette)
-  const counts = {};
-  (lines||[]).forEach(L=>{
-    const who = (L.split('\t')[2]||'').split(',').map(s=>s.trim()).filter(Boolean);
-    who.forEach(w=>{ counts[w]=(counts[w]||0)+1; });
-  });
-
+  // Profiles → perMeal map
   const perMeal = {};
   state.profiles.forEach(p=>{
     perMeal[p.name] = {
@@ -230,7 +261,7 @@ function buildPromptPayload(){
     };
   });
 
-  // Répartition recettes — simple: 1 repas = 1 portion par personne pour cette recette
+  // Each active meal = 1 recipe target (strict portions == 1 portion par profil présent)
   const chunkTargets = [];
   (lines||[]).forEach(L=>{
     const who = (L.split('\t')[2]||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -240,15 +271,15 @@ function buildPromptPayload(){
     const targets = {glucides_g_cru:0, viandes_poissons_g_cru:0, legumes_g_cru:0};
     Object.entries(portions).forEach(([name,n])=>{
       const p = perMeal[name]; if(!p) return;
-      targets.glucides_g_cru += p.glucides_g_cru * n;
+      targets.glucides_g_cru         += p.glucides_g_cru * n;
       targets.viandes_poissons_g_cru += p.viandes_poissons_g_cru * n;
-      targets.legumes_g_cru += p.legumes_g_cru * n;
+      targets.legumes_g_cru          += p.legumes_g_cru * n;
     });
 
     chunkTargets.push({ portions, targets });
   });
 
-  // Config / contraintes
+  // Config/contraintes
   const cfg = {
     allowed: (state.matos||'').split(',').map(s=>s.trim()).filter(Boolean),
     banned: [],
@@ -266,6 +297,7 @@ function buildPromptPayload(){
   const allergensTxt = cfg.allergens.join(', ') || '(aucune)';
   const placardTxt = cfg.placard ? `\nPlacard (à utiliser en priorité si pertinent) : ${cfg.placard}` : '';
   const likesTxt = cfg.likesPrompt ? `\nEnvies particulières : ${cfg.likesPrompt}` : '';
+
   const portionsLines = chunkTargets.map((rt,i)=> {
     const k = Object.entries(rt.portions).map(([n,v])=>`${n}=${v}`).join(', ');
     return `R${i+1}: ${k}`;
@@ -318,7 +350,7 @@ FORMAT:
   return {system,user};
 }
 
-// ====== OPENAI CALL ======
+/* =============== OPENAI CALL =============== */
 async function callOpenAI({system,user}){
   const key = (state.apiKey||'').trim();
   if(!key){ throw new Error('Clé OpenAI manquante.'); }
@@ -334,7 +366,6 @@ async function callOpenAI({system,user}){
     text: { format: { type: "json_object" } }
   };
 
-  // Par défaut: on appelle directement l’API (clé stockée côté client)
   const res = await fetch('https://api.openai.com/v1/responses', {
     method:'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
@@ -347,10 +378,10 @@ async function callOpenAI({system,user}){
   return await res.json();
 }
 
-// ====== RENDER RESULTS ======
+/* =============== RENDER RESULTS =============== */
 function renderPlan(plan){
   resultsEl.innerHTML='';
-  const tpl = el('#recipeTpl');
+  const tpl = document.getElementById('recipeTpl');
   (plan.recipes||[]).forEach((r,i)=>{
     const node = tpl.content.cloneNode(true);
     node.querySelector('.recipe-title').textContent = `Recette ${i+1} — ${r.title||''}`;
@@ -379,14 +410,14 @@ function renderPlan(plan){
   });
 }
 
-// ====== MAIN ACTION ======
+/* =============== MAIN ACTION =============== */
 generateBtn.addEventListener('click', async ()=>{
   try{
     statusEl.textContent = '⚙️ Génération en cours...';
     const payload = buildPromptPayload();
     const raw = await callOpenAI(payload);
 
-    // Récupère le JSON renvoyé
+    // Extract text
     let txt = '';
     if (typeof raw.output_text === 'string') {
       txt = raw.output_text;
@@ -396,7 +427,7 @@ generateBtn.addEventListener('click', async ()=>{
       throw new Error('Réponse inattendue.');
     }
 
-    // Parse “strict” (strip fences, trailing commas)
+    // Strict parse
     txt = (txt||'').trim().replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'');
     txt = txt.replace(/,\s*([}\]])/g,'$1');
     const first = txt.indexOf('{'), last = txt.lastIndexOf('}');
@@ -405,6 +436,8 @@ generateBtn.addEventListener('click', async ()=>{
 
     renderPlan(plan);
     statusEl.textContent = '✅ Terminé';
+    // switch to Planning tab if not visible
+    document.querySelector('.tab[data-tab="planning"]').click();
   }catch(e){
     console.error(e);
     statusEl.textContent = '❌ ' + e.message;
