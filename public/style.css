@@ -1,68 +1,50 @@
-body.app {
-  margin: 0; padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f8f3e8;
-  color: #222;
+:root{
+  --bg:#0d0d0e; --surface:#131315; --ink:#f6f5f4; --muted:#bfbab0;
+  --gold:#e7c570; --beige:#1b1b1d; --line:#262629; --accent:#8a7a4d;
+  --ok:#30b26b; --warn:#f0b429; --err:#ff6b6b;
+  --radius:18px;
+  --font:-apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
 }
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font)}
+.topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0d0d0ef2,#0d0d0e00)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 20px var(--gold)}
+.brand .title{font-weight:700;letter-spacing:.3px}
+.brand .badge{color:var(--gold);font-size:12px;border:1px solid var(--line);padding:2px 6px;border-radius:999px;background:#151516}
+.actions{display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:linear-gradient(180deg,#2a2a2d,#171719);border-color:#2e2e34}
+.btn.ghost{background:transparent}
 
-.dark {
-  background: #0d0d0d;
-  color: #f7f0d4;
-}
+.container{display:grid;grid-template-columns:380px 1fr;gap:16px;max-width:1400px;margin:18px auto;padding:0 16px}
+.panel h2{margin:8px 0 12px;font-size:18px}
+.card{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.card-title{padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#131315,#101012);font-weight:600}
+.card-body{padding:14px}
+details[open] .card-title{border-bottom:1px solid var(--line)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.field input,.field select,.field textarea{background:#0f0f11;border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:13px}
 
-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px;
-  background: linear-gradient(90deg, #111, #2c1f00);
-  color: #f9d97d;
-}
+.profiles{display:flex;flex-direction:column;gap:8px}
+.profile-item{display:flex;align-items:center;justify-content:space-between;border:1px dashed var(--line);border-radius:12px;padding:8px 10px}
+.profile-item .mini{color:var(--muted);font-size:12px}
+.profile-item .actions{display:flex;gap:8px}
 
-.card {
-  background: #fff;
-  margin: 10px; padding: 15px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.05);
-}
+.planning-wrap{overflow-x:auto}
+.planning{width:100%;border-collapse:collapse}
+.planning th,.planning td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:center}
+.planning thead th{position:sticky;top:0;background:var(--beige)}
+.planning .day{font-weight:600;text-align:left}
+.planning select,.planning input[type="checkbox"]{background:#0f0f11;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px}
 
-.dark .card {
-  background: #181818;
-}
-
-input, textarea {
-  width: 100%; margin: 6px 0 12px; padding: 10px;
-  border-radius: 12px; border: 1px solid #d7c9a2;
-  font-size: 15px;
-}
-
-button {
-  cursor: pointer;
-}
-
-.main-btn {
-  margin: 20px;
-  width: calc(100% - 40px);
-  background: #111;
-  color: #f5d77a;
-  padding: 16px; font-size: 18px;
-  border-radius: 14px;
-  border: none;
-}
-
-.theme-btn {
-  font-size: 20px;
-  background: none; border: none; color: #f7d98c;
-}
-
-.loader {
-  margin: 20px;
-  text-align: center;
-  font-size: 22px;
-}
-.hidden { display: none; }
-
-.result {
-  white-space: pre-wrap;
-  font-family: monospace;
-  margin: 10px;
-  font-size: 14px;
-}
+.status{margin-top:10px;color:var(--muted)}
+.results{display:grid;grid-template-columns:1fr;gap:12px;margin:12px 0}
+.recipe .pill{color:var(--gold);font-size:12px}
+.ing{width:100%;border-collapse:collapse}
+.ing th,.ing td{border-bottom:1px solid var(--line);padding:6px 8px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:980px){.container{grid-template-columns:1fr}}
