@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HEBO — Batch Cooking Sport</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<script defer src="app.js"></script>
+</head>
+
+<body class="app">
+<header>
+  <h1>🥗 HEBO — Batch Sport</h1>
+  <button id="themeToggle" class="theme-btn">🌙</button>
+</header>
+
+<section class="card">
+  <h2>🔑 Clé API</h2>
+  <input id="apiKey" type="password" placeholder="sk-..." />
+</section>
+
+<section class="card">
+  <h2>📅 Planning (texte libre)</h2>
+  <textarea id="planning" rows="6" placeholder="Exemple :&#10;Lundi midi : Poulet&#10;..."></textarea>
+</section>
+
+<section class="card">
+  <h2>👥 Portions & Besoins</h2>
+  <label>Glucides / repas</label>
+  <input id="gTho" type="number" placeholder="Thomas ex: 100" />
+  <input id="gAna" type="number" placeholder="Anaïs ex: 50" />
+
+  <label>Protéines / repas (g cru)</label>
+  <input id="pTho" type="number" placeholder="Thomas ex: 200" />
+  <input id="pAna" type="number" placeholder="Anaïs ex: 100" />
+
+  <label>Légumes / repas (g)</label>
+  <input id="lTho" type="number" placeholder="Thomas ex: 150" />
+  <input id="lAna" type="number" placeholder="Anaïs ex: 250" />
+
+  <label>Nombre de repas chacun</label>
+  <input id="rTho" type="number" placeholder="Thomas ex: 10" />
+  <input id="rAna" type="number" placeholder="Anaïs ex: 10" />
+</section>
+
+<section class="card">
+  <h2>🍽️ Matériel / Placard</h2>
+  <textarea id="matos" rows="2" placeholder="poêle, casserole, four, blender"></textarea>
+  <textarea id="placard" rows="2" placeholder="riz, pâtes, lentilles, épices..."></textarea>
+</section>
+
+<button id="generateBtn" class="main-btn">🚀 Générer mes recettes</button>
+
+<div id="loader" class="loader hidden">👨‍🍳 Je cuisine pour vous…</div>
+
+<section id="result" class="result"></section>
+
+</body>
+</html>
