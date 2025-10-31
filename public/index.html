@@ -16,99 +16,123 @@
       <span class="title">HEBO</span>
       <span class="badge">v6.1 “VENÈRE ++”</span>
     </div>
-    <div class="actions">
-      <button id="installBtn" class="btn ghost">Ajouter à l'écran d'accueil</button>
-      <button id="exportBtn" class="btn ghost">Exporter JSON</button>
-    </div>
+    <nav class="tabs" role="tablist" aria-label="Navigation">
+      <button class="tab active" data-tab="planning" role="tab" aria-selected="true">Planning</button>
+      <button class="tab" data-tab="profils" role="tab" aria-selected="false">Profils</button>
+      <button class="tab" data-tab="materiel" role="tab" aria-selected="false">Matériel</button>
+      <button class="tab" data-tab="params" role="tab" aria-selected="false">Paramètres</button>
+    </nav>
   </header>
 
   <main class="container">
-    <!-- Colonne gauche: Config -->
-    <section class="panel">
-      <h2>⚙️ Configuration</h2>
-      <details open class="card">
-        <summary class="card-title">Clé OpenAI</summary>
-        <div class="card-body">
-          <div class="field">
-            <label>Clé API <small>(stockée localement)</small></label>
-            <input id="apiKey" type="password" placeholder="sk-..." />
-          </div>
-          <div class="row">
-            <div class="field">
-              <label>Modèle</label>
-              <select id="model">
-                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
-                <option value="gpt-4o-mini">gpt-4o-mini</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Tokens max</label>
-              <input id="maxTokens" type="number" min="1000" max="32000" step="500" value="12000" />
+
+    <!-- TAB: PLANNING -->
+    <section class="tabpanel active" id="tab-planning" role="tabpanel" aria-labelledby="Planning">
+      <div class="panel">
+        <h2>🗓️ Planning hebdo</h2>
+        <div class="card">
+          <div class="card-body">
+            <div class="hint">Coche qui mange <b>Midi</b>/<b>Dîner</b> pour chaque jour. Une colonne par profil.</div>
+            <div class="planning-wrap">
+              <table id="planningTable" class="planning"></table>
             </div>
           </div>
-          <div class="hint">💡 Tu peux aussi passer par un proxy Vercel pour cacher la clé (voir README).</div>
         </div>
-      </details>
 
-      <details open class="card">
-        <summary class="card-title">🧰 Matériel, envies & placard</summary>
-        <div class="card-body">
-          <div class="field">
-            <label>Matériel autorisé</label>
-            <input id="matos" type="text" placeholder="poêle, casserole, four, blender, wok" />
+        <details open class="card">
+          <summary class="card-title">🚀 Génération</summary>
+          <div class="card-body">
+            <button id="generateBtn" class="btn primary">Générer mes recettes</button>
+            <button id="exportBtn" class="btn ghost">Exporter JSON</button>
+            <span id="status" class="status"></span>
           </div>
-          <div class="field">
-            <label>Envies</label>
-            <input id="envies" type="text" placeholder="ex: plus de tex-mex, rapide, peu de vaisselle..." />
-          </div>
-          <div class="field">
-            <label>Autre (interdits; allergies; éviter; cuisines)</label>
-            <textarea id="autres" rows="3" placeholder="interdits: ...; allergies: ...; éviter: ...; cuisines: ..."></textarea>
-          </div>
-          <div class="field">
-            <label>Placard (prioritaire)</label>
-            <textarea id="placard" rows="3" placeholder="liste libre"></textarea>
-          </div>
-        </div>
-      </details>
+        </details>
 
-      <details open class="card">
-        <summary class="card-title">👤 Profils & portions</summary>
-        <div class="card-body">
-          <form id="profileForm" class="row">
-            <div class="field"><label>Nom</label><input id="pName" type="text" placeholder="Thomas" /></div>
-            <div class="field"><label>G / portion (g)</label><input id="pG" type="number" value="100" /></div>
-            <div class="field"><label>P / portion (g)</label><input id="pP" type="number" value="200" /></div>
-            <div class="field"><label>Lég / portion (g)</label><input id="pV" type="number" value="150" /></div>
-            <button class="btn" id="addProfileBtn">Ajouter/Mettre à jour</button>
-          </form>
-          <div id="profilesList" class="profiles"></div>
-        </div>
-      </details>
+        <div id="results" class="results"></div>
+      </div>
     </section>
 
-    <!-- Colonne droite: Planning + Génération -->
-    <section class="panel">
-      <h2>🗓️ Planning hebdo</h2>
-      <div class="card">
-        <div class="card-body">
-          <div class="hint">Coche les repas pour chaque jour (Midi / Dîner) et assigne qui mange.</div>
-          <div class="planning-wrap">
-            <table id="planningTable" class="planning"></table>
+    <!-- TAB: PROFILS -->
+    <section class="tabpanel" id="tab-profils" role="tabpanel" aria-labelledby="Profils" hidden>
+      <div class="panel">
+        <h2>👤 Profils & portions</h2>
+        <div class="card">
+          <div class="card-body">
+            <form id="profileForm" class="row">
+              <div class="field"><label>Nom</label><input id="pName" type="text" placeholder="Thomas" /></div>
+              <div class="field"><label>G / portion (g)</label><input id="pG" type="number" value="100" /></div>
+              <div class="field"><label>P / portion (g)</label><input id="pP" type="number" value="200" /></div>
+              <div class="field"><label>Lég / portion (g)</label><input id="pV" type="number" value="150" /></div>
+              <button class="btn" id="addProfileBtn">Ajouter / Mettre à jour</button>
+            </form>
+            <div id="profilesList" class="profiles"></div>
           </div>
         </div>
       </div>
-
-      <details open class="card">
-        <summary class="card-title">🚀 Génération</summary>
-        <div class="card-body">
-          <button id="generateBtn" class="btn primary">Générer mes recettes</button>
-          <div id="status" class="status"></div>
-        </div>
-      </details>
-
-      <div id="results" class="results"></div>
     </section>
+
+    <!-- TAB: MATERIEL -->
+    <section class="tabpanel" id="tab-materiel" role="tabpanel" aria-labelledby="Matériel" hidden>
+      <div class="panel">
+        <h2>🧰 Matériel, envies & placard</h2>
+        <div class="card">
+          <div class="card-body">
+            <div class="field">
+              <label>Matériel autorisé</label>
+              <input id="matos" type="text" placeholder="poêle, casserole, four, blender, wok" />
+            </div>
+            <div class="field">
+              <label>Envies</label>
+              <input id="envies" type="text" placeholder="ex: plus de tex-mex, rapide, peu de vaisselle..." />
+            </div>
+            <div class="field">
+              <label>Autre (interdits; allergies; éviter; cuisines)</label>
+              <textarea id="autres" rows="3" placeholder="interdits: ...; allergies: ...; éviter: ...; cuisines: ..."></textarea>
+            </div>
+            <div class="field">
+              <label>Placard (prioritaire)</label>
+              <textarea id="placard" rows="3" placeholder="liste libre"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: PARAMS -->
+    <section class="tabpanel" id="tab-params" role="tabpanel" aria-labelledby="Paramètres" hidden>
+      <div class="panel">
+        <h2>⚙️ Paramètres</h2>
+        <div class="card">
+          <div class="card-body">
+            <div class="field">
+              <label>Clé API OpenAI <small>(stockée localement)</small></label>
+              <input id="apiKey" type="password" placeholder="sk-..." />
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Modèle</label>
+                <select id="model">
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Tokens max</label>
+                <input id="maxTokens" type="number" min="1000" max="32000" step="500" value="12000" />
+              </div>
+            </div>
+            <div class="hint">💡 Option plus clean: route API Vercel pour cacher la clé (variables d’environnement).</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body row">
+            <button id="installBtn" class="btn ghost">Ajouter à l'écran d'accueil</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <template id="recipeTpl">
