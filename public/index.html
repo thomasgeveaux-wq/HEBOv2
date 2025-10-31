@@ -1,60 +1,148 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HEBO — Batch Cooking Sport</title>
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-<script defer src="app.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>HEBO — Hybrid Fit/Notion</title>
+  <meta name="theme-color" content="#0d0d0e" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="title">HEBO</span>
+      <span class="badge">v6.1 “VENÈRE ++”</span>
+    </div>
+    <div class="actions">
+      <button id="installBtn" class="btn ghost">Ajouter à l'écran d'accueil</button>
+      <button id="exportBtn" class="btn ghost">Exporter JSON</button>
+    </div>
+  </header>
 
-<body class="app">
-<header>
-  <h1>🥗 HEBO — Batch Sport</h1>
-  <button id="themeToggle" class="theme-btn">🌙</button>
-</header>
+  <main class="container">
+    <!-- Colonne gauche: Config -->
+    <section class="panel">
+      <h2>⚙️ Configuration</h2>
+      <details open class="card">
+        <summary class="card-title">Clé OpenAI</summary>
+        <div class="card-body">
+          <div class="field">
+            <label>Clé API <small>(stockée localement)</small></label>
+            <input id="apiKey" type="password" placeholder="sk-..." />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Modèle</label>
+              <select id="model">
+                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tokens max</label>
+              <input id="maxTokens" type="number" min="1000" max="32000" step="500" value="12000" />
+            </div>
+          </div>
+          <div class="hint">💡 Tu peux aussi passer par un proxy Vercel pour cacher la clé (voir README).</div>
+        </div>
+      </details>
 
-<section class="card">
-  <h2>🔑 Clé API</h2>
-  <input id="apiKey" type="password" placeholder="sk-..." />
-</section>
+      <details open class="card">
+        <summary class="card-title">🧰 Matériel, envies & placard</summary>
+        <div class="card-body">
+          <div class="field">
+            <label>Matériel autorisé</label>
+            <input id="matos" type="text" placeholder="poêle, casserole, four, blender, wok" />
+          </div>
+          <div class="field">
+            <label>Envies</label>
+            <input id="envies" type="text" placeholder="ex: plus de tex-mex, rapide, peu de vaisselle..." />
+          </div>
+          <div class="field">
+            <label>Autre (interdits; allergies; éviter; cuisines)</label>
+            <textarea id="autres" rows="3" placeholder="interdits: ...; allergies: ...; éviter: ...; cuisines: ..."></textarea>
+          </div>
+          <div class="field">
+            <label>Placard (prioritaire)</label>
+            <textarea id="placard" rows="3" placeholder="liste libre"></textarea>
+          </div>
+        </div>
+      </details>
 
-<section class="card">
-  <h2>📅 Planning (texte libre)</h2>
-  <textarea id="planning" rows="6" placeholder="Exemple :&#10;Lundi midi : Poulet&#10;..."></textarea>
-</section>
+      <details open class="card">
+        <summary class="card-title">👤 Profils & portions</summary>
+        <div class="card-body">
+          <form id="profileForm" class="row">
+            <div class="field"><label>Nom</label><input id="pName" type="text" placeholder="Thomas" /></div>
+            <div class="field"><label>G / portion (g)</label><input id="pG" type="number" value="100" /></div>
+            <div class="field"><label>P / portion (g)</label><input id="pP" type="number" value="200" /></div>
+            <div class="field"><label>Lég / portion (g)</label><input id="pV" type="number" value="150" /></div>
+            <button class="btn" id="addProfileBtn">Ajouter/Mettre à jour</button>
+          </form>
+          <div id="profilesList" class="profiles"></div>
+        </div>
+      </details>
+    </section>
 
-<section class="card">
-  <h2>👥 Portions & Besoins</h2>
-  <label>Glucides / repas</label>
-  <input id="gTho" type="number" placeholder="Thomas ex: 100" />
-  <input id="gAna" type="number" placeholder="Anaïs ex: 50" />
+    <!-- Colonne droite: Planning + Génération -->
+    <section class="panel">
+      <h2>🗓️ Planning hebdo</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="hint">Coche les repas pour chaque jour (Midi / Dîner) et assigne qui mange.</div>
+          <div class="planning-wrap">
+            <table id="planningTable" class="planning"></table>
+          </div>
+        </div>
+      </div>
 
-  <label>Protéines / repas (g cru)</label>
-  <input id="pTho" type="number" placeholder="Thomas ex: 200" />
-  <input id="pAna" type="number" placeholder="Anaïs ex: 100" />
+      <details open class="card">
+        <summary class="card-title">🚀 Génération</summary>
+        <div class="card-body">
+          <button id="generateBtn" class="btn primary">Générer mes recettes</button>
+          <div id="status" class="status"></div>
+        </div>
+      </details>
 
-  <label>Légumes / repas (g)</label>
-  <input id="lTho" type="number" placeholder="Thomas ex: 150" />
-  <input id="lAna" type="number" placeholder="Anaïs ex: 250" />
+      <div id="results" class="results"></div>
+    </section>
+  </main>
 
-  <label>Nombre de repas chacun</label>
-  <input id="rTho" type="number" placeholder="Thomas ex: 10" />
-  <input id="rAna" type="number" placeholder="Anaïs ex: 10" />
-</section>
+  <template id="recipeTpl">
+    <article class="recipe card">
+      <div class="card-title recipe-head">
+        <div class="recipe-title"></div>
+        <div class="pill"></div>
+      </div>
+      <div class="card-body">
+        <div class="meta grid-2">
+          <div><b>Cuisine</b>: <span class="r-cuisine"></span></div>
+          <div><b>Durée</b>: <span class="r-duree"></span> min</div>
+          <div><b>Matériel</b>: <span class="r-matos"></span></div>
+          <div><b>Portions</b>: <span class="r-portions"></span></div>
+          <div><b>Cibles (g cru)</b>: <span class="r-cibles"></span></div>
+          <div><b>kcal/personne</b>: <span class="r-kcal"></span></div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <h4>🧂 Ingrédients</h4>
+            <table class="ing"><thead><tr><th>Ingrédient</th><th>Qté</th><th>Unité</th></tr></thead><tbody class="r-ing"></tbody></table>
+          </div>
+          <div>
+            <h4>👨‍🍳 Étapes — plat</h4>
+            <ol class="r-steps"></ol>
+            <h4>🥣 Étapes — sauce</h4>
+            <ol class="r-sauce"></ol>
+          </div>
+        </div>
+        <div class="benefit"><b>Bénéfices (sport)</b> : <span class="r-benef"></span></div>
+      </div>
+    </article>
+  </template>
 
-<section class="card">
-  <h2>🍽️ Matériel / Placard</h2>
-  <textarea id="matos" rows="2" placeholder="poêle, casserole, four, blender"></textarea>
-  <textarea id="placard" rows="2" placeholder="riz, pâtes, lentilles, épices..."></textarea>
-</section>
-
-<button id="generateBtn" class="main-btn">🚀 Générer mes recettes</button>
-
-<div id="loader" class="loader hidden">👨‍🍳 Je cuisine pour vous…</div>
-
-<section id="result" class="result"></section>
-
+  <script src="./app.js"></script>
 </body>
 </html>
